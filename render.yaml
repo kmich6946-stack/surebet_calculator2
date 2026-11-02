@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: surebet-calculator
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: waitress-serve --listen=0.0.0.0:$PORT app:app
+    healthCheckPath: /api/registration-status
+    envVars:
+      - key: SUREBET_HOST
+        value: 0.0.0.0
+      - key: SUREBET_DATA_DIR
+        value: /var/data
+      - key: SUREBET_SECURE_COOKIES
+        value: "true"
+      - key: SUREBET_TRUST_PROXY
+        value: "true"
+      - key: DATABASE_URL
+        sync: false

@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Surebet Calculator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #071321;
+      --panel: #101f30;
+      --panel-raised: #172a3d;
+      --border: #2a4055;
+      --text: #edf4fa;
+      --muted: #9db0c1;
+      --accent: #60a5fa;
+      --good: #34d399;
+      --bad: #fb7185;
+      --warning: #fbbf24;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 32px 16px;
+      background: radial-gradient(ellipse at top, #132a42 0, var(--page) 55%);
+      color: var(--text);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    main { width: min(760px, 100%); margin: 0 auto; }
+    h1 { display: flex; align-items: center; gap: 12px; margin: 0; font-size: clamp(1.7rem, 5vw, 2.25rem); line-height: 1.15; }
+    .brand-mark { width: 46px; height: 46px; flex: 0 0 auto; color: var(--accent); filter: drop-shadow(0 0 8px #60a5fa66); animation: brand-float 3s ease-in-out infinite; }
+    .brand-orbit { transform-origin: 32px 32px; animation: brand-spin 8s linear infinite; }
+    @keyframes brand-float { 50% { transform: translateY(-3px); filter: drop-shadow(0 0 14px #60a5faaa); } }
+    @keyframes brand-spin { to { transform: rotate(360deg); } }
+    h2 { margin: 0 0 16px; font-size: 1.05rem; }
+    p { color: var(--muted); }
+    .intro { margin: 10px 0 24px; }
+
+    .card {
+      margin: 16px 0;
+      padding: 22px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      box-shadow: 0 18px 48px #0003;
+    }
+
+    .fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    label { display: block; font-weight: 650; }
+    label span { display: block; margin-bottom: 7px; }
+    input, select {
+      width: 100%;
+      min-height: 48px;
+      padding: 10px 12px;
+      border: 1px solid #496179;
+      border-radius: 9px;
+      outline: none;
+      background: #091726;
+      color: var(--text);
+      font: inherit;
+      font-variant-numeric: tabular-nums;
+    }
+
+    input:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #60a5fa33; }
+    .hint { margin: 6px 0 0; color: var(--muted); font-size: .85rem; font-weight: 400; }
+    .status {
+      margin-bottom: 18px;
+      padding: 13px 15px;
+      border: 1px solid currentColor;
+      border-radius: 10px;
+      font-weight: 750;
+      letter-spacing: .02em;
+    }
+    .status.good { color: var(--good); background: #34d39912; }
+    .status.bad { color: var(--bad); background: #fb718512; }
+    .status.warning { color: var(--warning); background: #fbbf2412; }
+
+    dl {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0;
+    }
+
+    dl div { min-width: 0; padding: 14px; border-radius: 10px; background: var(--panel-raised); }
+    dt { color: var(--muted); font-size: .9rem; }
+    dd { margin: 3px 0 0; font-size: 1.2rem; font-weight: 750; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+    .formula { margin: 16px 0 0; font-size: .9rem; }
+    .message { margin: 14px 0 0; padding: 12px; border-left: 3px solid var(--warning); background: #fbbf240e; color: var(--text); }
+    .risk-message { margin: 14px 0 0; padding: 12px; border-left: 3px solid var(--accent); background: #60a5fa12; color: var(--text); }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 16px; }
+    .auth-tabs button[aria-pressed="true"] { border-color: var(--accent); background: #1d4b77; }
+    .account-bar { display: flex; align-items: center; justify-content: flex-end; gap: 12px; margin: 8px 0 16px; color: var(--muted); }
+    .hidden { display: none; }
+    footer { padding: 4px 2px; color: var(--muted); font-size: .85rem; }
+    button {
+      min-height: 44px;
+      padding: 9px 15px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: var(--panel-raised);
+      color: var(--text);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.primary { border-color: var(--accent); background: #1d4b77; }
+    button:focus-visible { outline: 3px solid #60a5fa88; outline-offset: 2px; }
+    @media (max-width: 540px) {
+      body { padding: 22px 12px; }
+      .card { padding: 17px; }
+      .fields, dl { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+  </style>
+</head>
+<body>
+  <main id="auth-screen">
+    <header>
+      <h1><span>Surebet Calculator</span></h1>
+      <p class="intro">Sign in or create an account to use the calculator. Up to 5 accounts are supported.</p>
+    </header>
+    <section class="card" aria-labelledby="auth-title">
+      <h2 id="auth-title">Sign in</h2>
+      <div class="auth-tabs" role="group" aria-label="Account action">
+        <button id="login-mode" type="button" aria-pressed="true">Sign in</button>
+        <button id="register-mode" type="button" aria-pressed="false">Create account</button>
+      </div>
+      <div id="auth-status" class="status warning" role="status" aria-live="polite">Checking account availability…</div>
+      <form id="auth-form">
+        <div class="fields">
+          <label for="auth-username">
+            <span>Username</span>
+            <input id="auth-username" name="username" required minlength="3" maxlength="32" pattern="[A-Za-z0-9._@-]+" autocomplete="username">
+          </label>
+          <label for="auth-password">
+            <span>Password</span>
+            <input id="auth-password" name="password" type="password" required minlength="12" maxlength="128" autocomplete="current-password">
+            <span id="password-hint" class="hint">Use at least 12 characters.</span>
+          </label>
+        </div>
+        <div class="actions">
+          <button id="auth-submit" class="primary" type="submit">Sign in</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <main id="calculator-app" class="hidden">
+    <div class="account-bar">
+      <span id="signed-in-user"></span>
+      <button id="logout-button" type="button">Sign out</button>
+    </div>
+    <header>
+      <h1>
+        <svg class="brand-mark" viewBox="0 0 64 64" role="img" aria-label="Animated Surebet Calculator logo">
+          <rect x="10" y="7" width="44" height="50" rx="9" fill="#122b43" stroke="currentColor" stroke-width="3"></rect>
+          <rect x="17" y="14" width="30" height="11" rx="3" fill="#60a5fa"></rect>
+          <path d="M21 19h8m-4-4v8m9-4h8" stroke="#071321" stroke-width="2" stroke-linecap="round"></path>
+          <g fill="#edf4fa"><rect x="17" y="31" width="8" height="7" rx="2"></rect><rect x="28" y="31" width="8" height="7" rx="2"></rect><rect x="39" y="31" width="8" height="7" rx="2"></rect><rect x="17" y="42" width="8" height="7" rx="2"></rect><rect x="28" y="42" width="8" height="7" rx="2"></rect></g>
+          <rect x="39" y="42" width="8" height="7" rx="2" fill="#34d399"></rect>
+          <path class="brand-orbit" d="M54 32a22 22 0 0 1-22 22" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 5"></path>
+        </svg>
+        <span>Surebet Calculator</span>
+      </h1>
+      <p class="intro">Compare two opposing outcomes, balance stakes, and review market-specific risks.</p>
+    </header>
+
+    <section class="card" aria-labelledby="inputs-title">
+      <h2 id="inputs-title">Opportunity details</h2>
+      <div class="fields">
+        <label for="market">
+          <span>Market</span>
+          <select id="market">
+            <option value="tennis">Tennis — Player 1 vs Player 2</option>
+            <option value="btts">Football — BTTS Yes vs No</option>
+            <option value="double-chance">Football — Double Chance 1X vs 2</option>
+            <option value="goals">Football — Over vs Under goals</option>
+          </select>
+        </label>
+        <label for="total-stake">
+          <span>Total stake</span>
+          <input id="total-stake" type="number" min="0.02" step="0.01" inputmode="decimal" placeholder="e.g. 100.00" autocomplete="off">
+          <span class="hint">Use the same currency for all amounts.</span>
+        </label>
+        <label for="odds-a">
+          <span id="label-a">Option A odds — Player 1</span>
+          <input id="odds-a" type="number" min="1.01" step="0.01" inputmode="decimal" placeholder="e.g. 1.35" autocomplete="off">
+        </label>
+        <label for="odds-b">
+          <span id="label-b">Option B odds — Player 2</span>
+          <input id="odds-b" type="number" min="1.01" step="0.01" inputmode="decimal" placeholder="e.g. 3.80" autocomplete="off">
+        </label>
+      </div>
+    </section>
+
+    <section id="results" class="card" aria-labelledby="results-title" aria-live="polite">
+      <h2 id="results-title">Result</h2>
+      <div id="status" class="status warning" role="status">Enter a total stake and both decimal odds.</div>
+      <p id="validation" class="message hidden"></p>
+      <p id="risk-message" class="risk-message" role="status"></p>
+      <div id="breakdown" class="hidden">
+        <dl>
+          <div><dt id="result-label-a">Stake on Player 1</dt><dd id="stake-a">—</dd></div>
+          <div><dt id="result-label-b">Stake on Player 2</dt><dd id="stake-b">—</dd></div>
+          <div><dt>Total staked</dt><dd id="total-out">—</dd></div>
+          <div><dt>Guaranteed payout (lower outcome)</dt><dd id="payout">—</dd></div>
+          <div><dt>Guaranteed net profit</dt><dd id="profit">—</dd></div>
+          <div><dt>Profit percentage (formula)</dt><dd id="profit-percent">—</dd></div>
+        </dl>
+        <p id="rounding-note" class="message hidden"></p>
+        <div class="actions">
+          <button id="share-button" class="primary" type="button">Share result on WhatsApp</button>
+        </div>
+      </div>
+      <p id="formula" class="formula">Combined implied probability: P = (1 / Oa) + (1 / Ob). Arbitrage requires P &lt; 1.</p>
+    </section>
+
+    <footer>
+      No odds are scanned or fetched. This calculator assumes the two listed outcomes cover the entire event and excludes fees, taxes, stake limits, voids, and odds changes. It calculates potential returns, not a guarantee that a bookmaker will accept or settle either bet.
+    </footer>
+  </main>
+
+  <script>
+    "use strict";
+  </script>
+
+  <script>
+    "use strict";
+
+    const authScreen = document.getElementById("auth-screen");
+    const calculatorApp = document.getElementById("calculator-app");
+    const authForm = document.getElementById("auth-form");
+    const authTitle = document.getElementById("auth-title");
+    const authStatus = document.getElementById("auth-status");
+    const authSubmit = document.getElementById("auth-submit");
+    const authPassword = document.getElementById("auth-password");
+    const passwordHint = document.getElementById("password-hint");
+    const loginModeButton = document.getElementById("login-mode");
+    const registerModeButton = document.getElementById("register-mode");
+    let authMode = "login";
+    let registrationAvailable = false;
+
+    function setAuthMode(mode) {
+      authMode = mode;
+      const registering = mode === "register";
+      authTitle.textContent = registering ? "Create account" : "Sign in";
+      authSubmit.textContent = registering ? "Create account" : "Sign in";
+      authPassword.autocomplete = registering ? "new-password" : "current-password";
+      authPassword.minLength = registering ? 12 : 1;
+      passwordHint.textContent = registering ? "Use at least 12 characters." : "";
+      passwordHint.classList.toggle("hidden", !registering);
+      loginModeButton.setAttribute("aria-pressed", String(!registering));
+      registerModeButton.setAttribute("aria-pressed", String(registering));
+      authSubmit.disabled = registering && !registrationAvailable;
+      authStatus.className = "status " + (registering && !registrationAvailable ? "bad" : "warning");
+      authStatus.textContent = registering && !registrationAvailable
+        ? "The 5-account limit has been reached. Sign in with an existing account."
+        : registering
+          ? "Create a free account. Usernames can use letters, numbers, dots, underscores, @, and hyphens."
+          : "Sign in or create a free account.";
+    }
+
+    async function refreshRegistrationStatus() {
+      const response = await fetch("/api/registration-status", { credentials: "same-origin" });
+      if (!response.ok) throw new Error("Could not check account availability.");
+      const data = await response.json();
+      registrationAvailable = data.available;
+      if (authMode === "register") authSubmit.disabled = !registrationAvailable;
+    }
+
+    function showCalculator(username) {
+      document.getElementById("signed-in-user").textContent = username;
+      authScreen.classList.add("hidden");
+      calculatorApp.classList.remove("hidden");
+    }
+
+    loginModeButton.addEventListener("click", function () { setAuthMode("login"); });
+    registerModeButton.addEventListener("click", function () { setAuthMode("register"); });
+
+    authForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      if (authMode === "register" && !registrationAvailable) {
+        setAuthMode("register");
+        return;
+      }
+      authSubmit.disabled = true;
+      authStatus.className = "status warning";
+      authStatus.textContent = authMode === "register" ? "Creating account…" : "Signing in…";
+      try {
+        const response = await fetch(authMode === "register" ? "/api/register" : "/api/login", {
+          method: "POST",
+          credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: document.getElementById("auth-username").value,
+            password: authPassword.value
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Account request failed.");
+        authForm.reset();
+        showCalculator(data.username);
+        await refreshRegistrationStatus();
+      } catch (error) {
+        authStatus.className = "status bad";
+        authStatus.textContent = error.message || "Could not connect to the calculator server.";
+        try {
+          await refreshRegistrationStatus();
+        } catch (statusError) {
+          authSubmit.disabled = authMode === "register";
+        }
+      } finally {
+        if (authScreen.classList.contains("hidden")) {
+          authSubmit.disabled = false;
+        } else {
+          authSubmit.disabled = authMode === "register" && !registrationAvailable;
+        }
+      }
+    });
+
+    document.getElementById("logout-button").addEventListener("click", async function () {
+      try {
+        const response = await fetch("/api/logout", {
+          method: "POST",
+          credentials: "same-origin"
+        });
+        if (!response.ok) throw new Error("Could not sign out.");
+        calculatorApp.classList.add("hidden");
+        authScreen.classList.remove("hidden");
+        authForm.reset();
+        setAuthMode("login");
+      } catch (error) {
+        window.alert(error.message || "Could not connect to the calculator server.");
+      }
+    });
+
+    async function initializeAuth() {
+      try {
+        await refreshRegistrationStatus();
+        const response = await fetch("/api/me", { credentials: "same-origin" });
+        if (response.ok) {
+          const user = await response.json();
+          showCalculator(user.username);
+        } else {
+          setAuthMode("login");
+        }
+      } catch (error) {
+        authStatus.className = "status bad";
+        authStatus.textContent = error.message || "Could not connect to the calculator server.";
+        authSubmit.disabled = true;
+        registerModeButton.disabled = true;
+      }
+    }
+
+    const totalInput = document.getElementById("total-stake");
+    const oddsAInput = document.getElementById("odds-a");
+    const oddsBInput = document.getElementById("odds-b");
+    const marketInput = document.getElementById("market");
+    const status = document.getElementById("status");
+    const validation = document.getElementById("validation");
+    const breakdown = document.getElementById("breakdown");
+    const roundingNote = document.getElementById("rounding-note");
+    const formula = document.getElementById("formula");
+    const riskMessage = document.getElementById("risk-message");
+    const marketDetails = {
+      tennis: {
+        a: "Player 1",
+        b: "Player 2",
+        risk: "Tennis risk: Check both bookmakers’ retirement, walkover, and minimum-play rules. One site may void a retired-player bet while the other settles it."
+      },
+      btts: {
+        a: "BTTS Yes",
+        b: "BTTS No",
+        risk: "BTTS risk: Confirm both prices cover the same match period (usually 90 minutes plus stoppage time) and use identical abandonment, postponement, and settlement rules."
+      },
+      "double-chance": {
+        a: "Double Chance 1X",
+        b: "Away Win (2)",
+        risk: "Double-chance risk: Confirm 1X means home win or draw and that both bets cover the same regulation-time period, competition, and abandonment rules."
+      },
+      goals: {
+        a: "Over goals",
+        b: "Under goals",
+        risk: "Goals risk: Select the exact same goal line and match period at both bookmakers. Check how a whole-number line push, extra time, and abandoned matches are settled."
+      }
+    };
+    let latestShareText = "";
+
+    const money = new Intl.NumberFormat(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+
+    function showValidation(message) {
+      status.className = "status warning";
+      status.textContent = "Check your inputs";
+      validation.textContent = message;
+      validation.classList.remove("hidden");
+      breakdown.classList.add("hidden");
+      formula.textContent = "Arbitrage percentage: P = (1 / Oa) + (1 / Ob)";
+    }
+
+    function setResult(label, kind) {
+      status.className = "status " + kind;
+      status.textContent = label;
+      validation.classList.add("hidden");
+    }
+
+    function updateMarket() {
+      const details = marketDetails[marketInput.value];
+      document.getElementById("label-a").textContent = "Option A odds — " + details.a;
+      document.getElementById("label-b").textContent = "Option B odds — " + details.b;
+      document.getElementById("result-label-a").textContent = "Stake on " + details.a;
+      document.getElementById("result-label-b").textContent = "Stake on " + details.b;
+      riskMessage.textContent = details.risk;
+      calculate();
+    }
+
+    function calculate() {
+      const total = Number(totalInput.value);
+      const oddsA = Number(oddsAInput.value);
+      const oddsB = Number(oddsBInput.value);
+
+      if (!totalInput.value || !oddsAInput.value || !oddsBInput.value) {
+        status.className = "status warning";
+        status.textContent = "Enter a total stake and both decimal odds.";
+        validation.classList.add("hidden");
+        breakdown.classList.add("hidden");
+        formula.textContent = "Combined implied probability: P = (1 / Oa) + (1 / Ob). Arbitrage requires P < 1.";
+        latestShareText = "";
+        return;
+      }
+
+      if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(oddsA) || !Number.isFinite(oddsB)) {
+        showValidation("Enter finite numeric values greater than zero.");
+        return;
+      }
+
+      if (oddsA <= 1 || oddsB <= 1) {
+        showValidation("Decimal odds must be greater than 1.00.");
+        return;
+      }
+
+      const totalCents = Math.round((total + Number.EPSILON) * 100);
+      if (!Number.isSafeInteger(totalCents) || totalCents < 2) {
+        showValidation("Enter a total stake of at least 0.02 so both outcomes can receive at least 0.01.");
+        return;
+      }
+
+      const normalizedTotal = totalCents / 100;
+      const p = (1 / oddsA) + (1 / oddsB);
+      const details = marketDetails[marketInput.value];
+      const impliedPercent = (p * 100).toFixed(2);
+      formula.textContent = "Combined implied probability: P = (1 / " + oddsA + ") + (1 / " + oddsB + ") = " + p.toFixed(6) + " (" + impliedPercent + "%). Arbitrage requires P < 1.";
+
+      if (p >= 1) {
+        setResult(
+          p === 1 ? "🚩 NO ARBITRAGE — break-even before fees" : "🚩 NO ARBITRAGE — no guaranteed profit",
+          "bad"
+        );
+        breakdown.classList.add("hidden");
+        latestShareText = [
+          "Surebet Calculator — " + marketInput.options[marketInput.selectedIndex].text,
+          details.a + ": " + oddsA,
+          details.b + ": " + oddsB,
+          "Combined implied probability: " + impliedPercent + "%",
+          "No arbitrage (P must be below 100%)."
+        ].join("\n");
+        return;
+      }
+
+      const idealACents = totalCents * (1 / oddsA) / p;
+      const candidates = new Set([
+        Math.floor(idealACents),
+        Math.ceil(idealACents)
+      ]);
+
+      let bestA = null;
+      let bestDifference = Infinity;
+      for (const candidate of candidates) {
+        const stakeACents = Math.max(1, Math.min(totalCents - 1, candidate));
+        const payoutA = (stakeACents / 100) * oddsA;
+        const payoutB = ((totalCents - stakeACents) / 100) * oddsB;
+        const difference = Math.abs(payoutA - payoutB);
+        if (difference < bestDifference) {
+          bestDifference = difference;
+          bestA = stakeACents;
+        }
+      }
+
+      const stakeACents = bestA;
+      const stakeBCents = totalCents - stakeACents;
+      const stakeA = stakeACents / 100;
+      const stakeB = stakeBCents / 100;
+      const payoutA = stakeA * oddsA;
+      const payoutB = stakeB * oddsB;
+      const guaranteedPayout = Math.min(payoutA, payoutB);
+      const guaranteedProfit = guaranteedPayout - normalizedTotal;
+      const theoreticalProfitPercent = ((1 / p) - 1) * 100;
+
+      setResult("SUREBET — arbitrage condition met (P < 1)", "good");
+      breakdown.classList.remove("hidden");
+      document.getElementById("stake-a").textContent = money.format(stakeA);
+      document.getElementById("stake-b").textContent = money.format(stakeB);
+      document.getElementById("total-out").textContent = money.format(stakeA + stakeB);
+      document.getElementById("payout").textContent = money.format(guaranteedPayout);
+      document.getElementById("profit").textContent = money.format(guaranteedProfit);
+      document.getElementById("profit-percent").textContent = theoreticalProfitPercent.toFixed(2) + "%";
+      latestShareText = [
+        "Surebet Calculator — " + marketInput.options[marketInput.selectedIndex].text,
+        details.a + ": " + oddsA,
+        details.b + ": " + oddsB,
+        "Combined implied probability: " + impliedPercent + "%",
+        "Total stake: " + money.format(normalizedTotal),
+        "Balanced stakes: " + details.a + " " + money.format(stakeA) + " / " + details.b + " " + money.format(stakeB),
+        "Estimated guaranteed net profit: " + money.format(guaranteedProfit) + " (" + theoreticalProfitPercent.toFixed(2) + "%)",
+        "Check bookmaker rules and confirm odds before betting."
+      ].join("\n");
+
+      const roundedProfitCents = Math.round(guaranteedProfit * 100);
+      if (roundedProfitCents <= 0) {
+        roundingNote.textContent = "The theoretical odds satisfy P < 1, but rounding stakes to cents removes the guaranteed profit for this total stake. Increase the total stake or treat it as no realized arbitrage.";
+        roundingNote.classList.remove("hidden");
+      } else {
+        roundingNote.textContent = "Stake amounts are rounded to cents and sum exactly to the entered total. Payout and guaranteed profit use the lower of the two rounded-stake outcomes.";
+        roundingNote.classList.remove("hidden");
+      }
+    }
+
+    for (const input of [totalInput, oddsAInput, oddsBInput]) {
+      input.addEventListener("input", calculate);
+    }
+    marketInput.addEventListener("change", updateMarket);
+    document.getElementById("share-button").addEventListener("click", function () {
+      if (!latestShareText) return;
+      const url = "https://wa.me/?text=" + encodeURIComponent(latestShareText);
+      window.open(url, "_blank", "noopener,noreferrer");
+    });
+    initializeAuth();
+  </script>
+</body>
+</html>
